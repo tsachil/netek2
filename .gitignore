@@ -11,7 +11,21 @@ out/
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+!.env.*.example
 *.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+.secrets/
+.direnv/
+.envrc
 
 # IDE
 .idea/
@@ -33,8 +47,24 @@ coverage/
 .nyc_output/
 
 # Prisma
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
 apps/backend/prisma/*.db
 apps/backend/prisma/*.db-journal
+
+# Local databases / dumps
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+*.bak
+
+# Infrastructure local state
+.terraform/
+*.tfstate
+*.tfstate.*
 
 # Misc
 *.tsbuildinfo
