@@ -11,6 +11,6 @@
     "build": "npm run --workspaces --if-present build",
     "test": "npm run --workspaces --if-present test",
     "test:accessibility": "npm --workspace apps/web run test -- src/pages/AccessibilityRegression.test.tsx",
-    "check:ci": "npm test && npm run test:accessibility"
+    "check:ci": "npm --workspace apps/api run prisma:generate && npm test && npm run test:accessibility"
   }
 }
