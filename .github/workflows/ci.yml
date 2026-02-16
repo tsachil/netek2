@@ -21,5 +21,8 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Generate Prisma Client
+        run: npm --workspace apps/api run prisma:generate
+
       - name: CI Gate
         run: npm run check:ci
