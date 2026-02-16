@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import * as XLSX from "xlsx";
 
 type MockUser = {
   id: string;
@@ -16,6 +17,7 @@ type MockUser = {
 };
 
 const users = new Map<string, MockUser>();
+const branches = new Map<string, { branchCode: string; branchName: string; status: "ACTIVE" | "INACTIVE" }>();
 const auditLogs: Array<{
   id: string;
   userId: string | null;
@@ -66,6 +68,24 @@ const prismaMock = {
       const updated = { ...current, ...data };
       users.set(where.id, updated);
       return updated;
+    },
+    async create({ data }: any) {
+      const id = `user-${users.size + 1}`;
+      const created = {
+        id,
+        fullName: data.fullName,
+        employeeId: data.employeeId,
+        username: data.username,
+        passwordHash: data.passwordHash,
+        role: data.role,
+        status: data.status,
+        branchCode: data.branchCode ?? null,
+        failedLoginCount: 0,
+        lockedUntil: null,
+        createdAt: new Date()
+      } as MockUser;
+      users.set(id, created);
+      return created;
     },
     async count({ where }: any) {
       return [...users.values()].filter((u) => {
@@ -139,8 +159,17 @@ const prismaMock = {
   },
   branch: {
     async findUnique({ where }: any) {
-      if (where.branchCode === "0001") return { branchCode: "0001", status: "ACTIVE" };
-      return null;
+      return branches.get(where.branchCode) ?? null;
+    },
+    async upsert({ where, create, update }: any) {
+      const existing = branches.get(where.branchCode);
+      if (existing) {
+        const next = { ...existing, ...update };
+        branches.set(where.branchCode, next);
+        return next;
+      }
+      branches.set(where.branchCode, create);
+      return create;
     }
   },
   dayCycle: {
@@ -184,7 +213,9 @@ async function createTestApp() {
 describe("admin API", () => {
   beforeEach(() => {
     users.clear();
+    branches.clear();
     auditLogs.length = 0;
+    branches.set("0001", { branchCode: "0001", branchName: "Main", status: "ACTIVE" });
     users.set("admin-1", {
       id: "admin-1",
       fullName: "Admin One",
@@ -407,5 +438,36 @@ describe("admin API", () => {
     expect(res.body.pass.rpo).toBe(true);
     expect(res.body.pass.rto).toBe(true);
     expect(res.body.overallPass).toBe(true);
+  });
+
+  it("imports branch managers from xlsx file", async () => {
+    const app = await createTestApp();
+
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      ["A", "B", "C", "D", "", "", "", "", "I", "J", "K", "L"],
+      ["aa", "11", "Dana", "Levi", "", "", "", "", 72600, "Tel Aviv", "", ""]
+    ]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    const fileBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
+
+    const res = await request(app)
+      .post("/api/admin/users/import-branch-managers")
+      .attach("file", fileBuffer, {
+        filename: "branch_managers.xlsx",
+        contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      totalRows: 1,
+      created: 1,
+      updated: 0
+    });
+    const imported = [...users.values()].find((u) => u.username === "aa11@dbank.co.il");
+    expect(imported).toBeTruthy();
+    expect(imported?.role).toBe("BRANCH_MANAGER");
+    expect(imported?.branchCode).toBe("0726");
+    expect(branches.get("0726")?.branchName).toBe("Tel Aviv");
   });
 });

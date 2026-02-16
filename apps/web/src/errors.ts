@@ -26,6 +26,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   VOID_ONLY_SAME_DAY: "ניתן לבטל תנועה רק ביום העסקים הנוכחי.",
   ALREADY_VOIDED: "התנועה כבר בוטלה.",
   IMPORT_FAILED: "ייבוא הקובץ נכשל.",
+  MISSING_FILE: "יש לבחור קובץ לפני טעינה.",
+  INVALID_XLSX: "קובץ ה-XLSX אינו תקין או אינו תואם למבנה הנדרש.",
   DAY_ACTION_FAILED: "פעולת יום העסקים נכשלה.",
   SEARCH_FAILED: "חיפוש החשבונות נכשל.",
   LOAD_FAILED: "טעינת הנתונים נכשלה.",

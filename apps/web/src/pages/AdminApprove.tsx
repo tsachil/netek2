@@ -26,6 +26,12 @@ type UserDraft = {
   branchCode: string;
 };
 
+type BranchManagerImportSummary = {
+  totalRows: number;
+  created: number;
+  updated: number;
+};
+
 export default function AdminApprove() {
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [allUsers, setAllUsers] = useState<PendingUser[]>([]);
@@ -38,6 +44,9 @@ export default function AdminApprove() {
   const [search, setSearch] = useState("");
   const [drafts, setDrafts] = useState<Record<string, UserDraft>>({});
   const [temporaryPasswordNotice, setTemporaryPasswordNotice] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importSummary, setImportSummary] = useState<BranchManagerImportSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
 
@@ -179,10 +188,63 @@ export default function AdminApprove() {
     }
   }
 
+  async function uploadBranchManagersFile() {
+    if (!importFile) {
+      setError(toUserError(new Error("MISSING_FILE"), "IMPORT_FAILED"));
+      return;
+    }
+    setError(null);
+    setImportBusy(true);
+    setImportSummary(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const res = await fetch("/api/admin/users/import-branch-managers", {
+        method: "POST",
+        credentials: "include",
+        body: formData
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "IMPORT_FAILED");
+      }
+      const summary = (await res.json()) as BranchManagerImportSummary;
+      setImportSummary(summary);
+      setImportFile(null);
+      load();
+    } catch (err) {
+      setError(toUserError(err, "IMPORT_FAILED"));
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   return (
     <div className="auth-card wide">
       <h1>אישורים ממתינים</h1>
       <p className="subtitle">אישור משתמשים חדשים והקצאת הרשאות.</p>
+      <div className="panel inset">
+        <p className="subtitle">ייבוא מנהלי סניף מקובץ XLSX</p>
+        <div className="buttons">
+          <label>
+            בחירת קובץ
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+              aria-label="ייבוא מנהלי סניף מקובץ XLSX"
+            />
+          </label>
+          <button type="button" onClick={uploadBranchManagersFile} disabled={importBusy || !importFile}>
+            טעינת מנהלי סניף
+          </button>
+        </div>
+        {importSummary && (
+          <p className="helper">
+            נטענו {importSummary.totalRows} רשומות, נוצרו {importSummary.created}, עודכנו {importSummary.updated}.
+          </p>
+        )}
+      </div>
       {error && (
         <div className="error" role="alert" aria-live="assertive">
           {error}

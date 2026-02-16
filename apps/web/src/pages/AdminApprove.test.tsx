@@ -4,6 +4,7 @@ import AdminApprove from "./AdminApprove";
 
 const apiGetMock = vi.fn();
 const apiPostMock = vi.fn();
+const fetchMock = vi.fn();
 
 vi.mock("../api", () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
@@ -13,6 +14,7 @@ vi.mock("../api", () => ({
 describe("AdminApprove", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("fetch", fetchMock);
     apiGetMock.mockImplementation((url: string) => {
       if (url.includes("/api/admin/users")) {
         return Promise.resolve([
@@ -31,6 +33,10 @@ describe("AdminApprove", () => {
       return Promise.resolve([{ branchCode: "0001", branchName: "Main", status: "ACTIVE" }]);
     });
     apiPostMock.mockResolvedValue({});
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ totalRows: 1, created: 1, updated: 0 })
+    });
   });
 
   it("approves a pending user", async () => {
@@ -73,6 +79,27 @@ describe("AdminApprove", () => {
     await waitFor(() => {
       expect(apiPostMock).toHaveBeenCalledWith("/api/admin/users/u1/reset-password", {});
       expect(screen.getByText(/סיסמה זמנית עבור u1: Temp123!X/)).toBeInTheDocument();
+    });
+  });
+
+  it("uploads branch manager xlsx and shows summary", async () => {
+    render(<AdminApprove />);
+    await screen.findAllByText("User One");
+
+    const input = screen.getByLabelText("ייבוא מנהלי סניף מקובץ XLSX");
+    const file = new File([new Uint8Array([1, 2, 3])], "managers.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    fireEvent.change(input, { target: { files: [file] } });
+    fireEvent.click(screen.getByRole("button", { name: "טעינת מנהלי סניף" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/admin/users/import-branch-managers", {
+        method: "POST",
+        credentials: "include",
+        body: expect.any(FormData)
+      });
+      expect(screen.getByText(/נטענו 1 רשומות, נוצרו 1, עודכנו 0/)).toBeInTheDocument();
     });
   });
 });

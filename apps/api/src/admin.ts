@@ -1,13 +1,19 @@
 import { Router } from "express";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import multer from "multer";
 import prisma from "./db";
 import { requireRole } from "./auth";
 import { loadAuditRetentionPolicyFromEnv, runAuditRetention } from "./auditRetention";
 import { evaluateRecoverySlo } from "./recoverySlo";
 import { UserRole, UserStatus } from "./prismaEnums";
+import { parseBranchManagerImportWorkbook } from "./branchManagerImport";
 
 const router = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
 
 const listUsersQuerySchema = z.object({
   status: z.nativeEnum(UserStatus).optional(),
@@ -377,6 +383,89 @@ function generateTemporaryPassword(length = 12) {
     .sort(() => Math.random() - 0.5)
     .join("");
 }
+
+router.post(
+  "/users/import-branch-managers",
+  requireRole([UserRole.ADMIN]),
+  upload.single("file"),
+  async (req, res) => {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: "MISSING_FILE" });
+    }
+    const parsed = parseBranchManagerImportWorkbook(file.buffer);
+    if (parsed.errors.length > 0) {
+      return res.status(400).json({ error: "INVALID_XLSX", errors: parsed.errors });
+    }
+
+    const defaultPassword = process.env.BRANCH_MANAGER_IMPORT_DEFAULT_PASSWORD || "ChangeMe123!";
+    const defaultPasswordHash = await bcrypt.hash(defaultPassword, 12);
+
+    let created = 0;
+    let updated = 0;
+
+    for (const row of parsed.rows) {
+      await prisma.branch.upsert({
+        where: { branchCode: row.branchCode },
+        update: { branchName: row.branchName, status: "ACTIVE" },
+        create: {
+          branchCode: row.branchCode,
+          branchName: row.branchName,
+          status: "ACTIVE"
+        }
+      });
+
+      const existing = await prisma.user.findUnique({ where: { username: row.email } });
+      if (existing) {
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            fullName: row.fullName,
+            employeeId: row.employeeId,
+            role: UserRole.BRANCH_MANAGER,
+            status: UserStatus.ACTIVE,
+            branchCode: row.branchCode
+          }
+        });
+        updated += 1;
+      } else {
+        await prisma.user.create({
+          data: {
+            fullName: row.fullName,
+            employeeId: row.employeeId,
+            username: row.email,
+            passwordHash: defaultPasswordHash,
+            role: UserRole.BRANCH_MANAGER,
+            status: UserStatus.ACTIVE,
+            branchCode: row.branchCode
+          }
+        });
+        created += 1;
+      }
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.session.user?.id ?? null,
+        action: "USER_BRANCH_MANAGER_IMPORT",
+        entityType: "USER",
+        metadata: {
+          filename: file.originalname,
+          totalRows: parsed.rows.length,
+          created,
+          updated
+        },
+        ...auditContext(req)
+      }
+    });
+
+    return res.status(200).json({
+      totalRows: parsed.rows.length,
+      created,
+      updated
+    });
+  }
+);
 
 router.post("/users/:id/approve", requireRole([UserRole.ADMIN]), async (req, res) => {
   const parsed = approveSchema.safeParse(req.body);
