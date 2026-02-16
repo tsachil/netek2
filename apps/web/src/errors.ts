@@ -1,0 +1,44 @@
+const ERROR_MESSAGES: Record<string, string> = {
+  AUTH_FAILED: "אימות משתמש נכשל. יש להתחבר מחדש.",
+  LOGIN_FAILED: "התחברות נכשלה. יש לבדוק שם משתמש וסיסמה.",
+  REGISTER_FAILED: "רישום המשתמש נכשל.",
+  INVALID_CREDENTIALS: "שם משתמש או סיסמה שגויים.",
+  LOCKED: "המשתמש נעול זמנית לאחר ניסיונות כושלים.",
+  PENDING_APPROVAL: "המשתמש ממתין לאישור מנהל.",
+  INVALID_INPUT: "הקלט אינו תקין. יש לבדוק את השדות ולנסות שוב.",
+  INVALID_BRANCH: "קוד הסניף אינו תקין.",
+  USERNAME_TAKEN: "שם המשתמש כבר קיים במערכת.",
+  PASSWORDS_MISMATCH: "הסיסמאות אינן תואמות.",
+  MISSING_QUERY: "יש להזין ערך לחיפוש.",
+  BRANCH_REQUIRED: "יש לבחור סניף לביצוע הפעולה.",
+  ACCOUNT_NOT_FOUND: "החשבון לא נמצא בסניף שנבחר.",
+  WITHDRAWAL_BLOCKED: "לא ניתן לבצע משיכה: קיימות מגבלות או עיקולים.",
+  INSUFFICIENT_FUNDS: "אין יתרה מספקת לביצוע משיכה.",
+  VERSION_CONFLICT: "היתרה עודכנה על ידי משתמש אחר. יש לרענן ולנסות שוב.",
+  DAY_NOT_OPEN: "יום העסקים אינו פתוח לפעולות.",
+  DAY_NOT_CLOSING: "ניתן לשלוח התאמה רק בזמן סגירת יום.",
+  INVALID_DAY_TRANSITION: "פעולת מצב יום אינה תקינה במצב הנוכחי.",
+  NO_BCP_LOADED: "לא ניתן לפתוח יום ללא טעינת קובץ BCP תקין.",
+  TRANSACTION_FAILED: "ביצוע התנועה נכשל.",
+  VOID_FAILED: "ביטול התנועה נכשל.",
+  FORBIDDEN: "אין הרשאה לביצוע פעולה זו.",
+  FORBIDDEN_VOID: "אין הרשאה לבטל תנועה זו.",
+  VOID_ONLY_SAME_DAY: "ניתן לבטל תנועה רק ביום העסקים הנוכחי.",
+  ALREADY_VOIDED: "התנועה כבר בוטלה.",
+  IMPORT_FAILED: "ייבוא הקובץ נכשל.",
+  DAY_ACTION_FAILED: "פעולת יום העסקים נכשלה.",
+  SEARCH_FAILED: "חיפוש החשבונות נכשל.",
+  LOAD_FAILED: "טעינת הנתונים נכשלה.",
+  UPDATE_FAILED: "עדכון הנתונים נכשל.",
+  APPROVE_FAILED: "אישור המשתמש נכשל.",
+  UNLOCK_FAILED: "שחרור נעילת המשתמש נכשל.",
+  RESET_PASSWORD_FAILED: "איפוס הסיסמה נכשל.",
+  RETENTION_FAILED: "הרצת תהליך השימור נכשלה.",
+  AUDIT_LOAD_FAILED: "טעינת יומן הביקורת נכשלה.",
+  REQUEST_FAILED: "הבקשה נכשלה."
+};
+
+export function toUserError(error: unknown, fallbackCode = "REQUEST_FAILED") {
+  const code = error instanceof Error ? error.message : fallbackCode;
+  return ERROR_MESSAGES[code] ?? ERROR_MESSAGES[fallbackCode] ?? "אירעה שגיאה בלתי צפויה.";
+}

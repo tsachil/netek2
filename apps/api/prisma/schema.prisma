@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  NONE
+  ADMIN
+  BRANCH_MANAGER
+  TELLER
+}
+
+enum UserStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  INACTIVE
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DayState {
+  CLOSED
+  LOADING
+  OPEN
+  CLOSING
+  RECONCILING
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+enum TransactionStatus {
+  COMPLETED
+  VOIDED
+}
+
+model Branch {
+  branchCode String       @id
+  branchName String
+  status     BranchStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  users User[]
+  accounts Account[]
+}
+
+model User {
+  id               String     @id @default(cuid())
+  fullName         String
+  employeeId       String
+  username         String     @unique
+  passwordHash     String
+  role             UserRole   @default(NONE)
+  status           UserStatus @default(PENDING_APPROVAL)
+  branchCode       String?
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  branch Branch? @relation(fields: [branchCode], references: [branchCode])
+  tellerTransactions Transaction[] @relation("TellerTransactions")
+}
+
+model DayCycle {
+  businessDate      DateTime @id
+  state             DayState @default(CLOSED)
+  openedAt          DateTime?
+  closedAt          DateTime?
+  openedById        String?
+  closedById        String?
+  branchesLoaded    Int      @default(0)
+  totalAccountsLoaded Int    @default(0)
+  ledgerRecordCount Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Account {
+  id                      String   @id @default(cuid())
+  accountKey              String
+  fullAccountNumber       String
+  accountName             String
+  operationRestrictions   String?
+  currentBalance          Decimal  @db.Decimal(15, 2)
+  heldBalance             Decimal  @db.Decimal(15, 2)
+  fxSupplementaryAccounts Decimal  @db.Decimal(15, 2)
+  loans                   Decimal  @db.Decimal(15, 2)
+  deposits                Decimal  @db.Decimal(15, 2)
+  savingsPlans            Decimal  @db.Decimal(15, 2)
+  securities              Decimal  @db.Decimal(15, 2)
+  guarantees              Decimal  @db.Decimal(15, 2)
+  liens                   Decimal  @db.Decimal(15, 2)
+  pledges                 Decimal  @db.Decimal(15, 2)
+  annualDebitTurnover     Decimal  @db.Decimal(15, 2)
+  totalCreditLines        Decimal  @db.Decimal(15, 2)
+  nextVisaCharge          Decimal  @db.Decimal(15, 2)
+  visaDebt                Decimal  @db.Decimal(15, 2)
+  markers                 String?
+  openingBalance          Decimal  @db.Decimal(15, 2)
+  version                 Int      @default(1)
+  loadedDate              DateTime
+  branchCode              String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchCode], references: [branchCode], onDelete: Restrict, onUpdate: Cascade)
+  transactions Transaction[]
+
+  @@unique([accountKey, branchCode, loadedDate])
+  @@index([branchCode, loadedDate])
+  @@index([branchCode, accountKey])
+}
+
+model Transaction {
+  id            String            @id @default(cuid())
+  transactionId String            @unique
+  businessDate  DateTime
+  branchCode    String
+  accountId     String
+  accountKey    String
+  type          TransactionType
+  amount        Decimal           @db.Decimal(15, 2)
+  balanceBefore Decimal           @db.Decimal(15, 2)
+  balanceAfter  Decimal           @db.Decimal(15, 2)
+  status        TransactionStatus @default(COMPLETED)
+  voidReference String?
+  tellerUserId  String
+  referenceNote String?
+  createdAt     DateTime          @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  teller  User    @relation("TellerTransactions", fields: [tellerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([branchCode, businessDate])
+  @@index([accountId, businessDate])
+  @@index([tellerUserId, businessDate])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  action       String
+  entityType   String
+  entityId     String?
+  beforeState  Json?
+  afterState   Json?
+  businessDate DateTime?
+  branchCode   String?
+  ipAddress    String?
+  sessionId    String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@index([businessDate, branchCode])
+  @@index([entityType, entityId])
+}
