@@ -22,6 +22,7 @@ Executed scenario IDs:
 - [ ] UAT-10 Optimistic locking conflict
 - [ ] UAT-11 Same-day void flow
 - [ ] UAT-12 Ledger download
+- [ ] UAT-13 Branch manager XLSX import (Admin only)
 
 ## 2. Defect Summary
 Blockers (P1 severity): ______

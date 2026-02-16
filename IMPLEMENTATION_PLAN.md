@@ -193,6 +193,19 @@ Defer: **Account**, **Transaction**, **AuditLog** until P1/P2.
 - Pending registrations highlighted; “Approve” → modal to set role (Branch Manager / Teller) and branch → set `ACTIVE`.
 - Change role / change branch (with confirmation); rule: cannot demote last Admin.
 - Deactivate / reactivate; reset password (temp password, force change on next login); unlock account.
+- **Bulk branch-manager import (Admin only):**
+  - UI button to upload `.xlsx` file.
+  - Backend endpoint: `POST /api/admin/users/import-branch-managers` (multipart form-data, `file`).
+  - Mapping rules per file columns:
+    - `email/username = column A + column B + "@dbank.co.il"`
+    - `full_name = column C + column D`
+    - `branch_code = (column I if present, else column K) / 100`
+    - `branch_name = column J if present, else column L`
+  - Import behavior:
+    - Upsert branch by `branch_code` and update `branch_name`.
+    - Upsert user by `username` (email), enforce `role=BRANCH_MANAGER`, `status=ACTIVE`, and mapped `branch_code`.
+    - Return summary: `totalRows`, `created`, `updated`.
+    - Audit event: `USER_BRANCH_MANAGER_IMPORT`.
 
 **Deliverables:** User Management API and Screen 5.
 

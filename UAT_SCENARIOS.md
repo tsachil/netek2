@@ -125,6 +125,20 @@ Expected:
 - Naming convention is correct.
 - Summary row exists.
 
+### UAT-13 Branch manager XLSX import (Admin only)
+1. Login as `ADMIN`.
+2. Open user management screen and choose a valid `.xlsx` file for branch managers.
+3. Click import button.
+4. Verify summary counts (`totalRows`, `created`, `updated`) are displayed.
+5. Verify imported users exist with:
+   - `role=BRANCH_MANAGER`
+   - `status=ACTIVE`
+   - mapped `username` email and `branchCode`.
+Expected:
+- Import succeeds for valid file and shows summary counts.
+- Invalid file returns structured validation errors.
+- Non-admin users cannot access this action.
+
 ## Error Handling Matrix
 
 | Code | Trigger | Expected UI behavior |

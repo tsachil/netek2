@@ -2,6 +2,7 @@
 
 ## Scope
 This runbook covers operational alerts emitted by the API for scheduled audit-retention failures.
+It also documents secure operation of the admin-only branch-manager XLSX import flow.
 
 ## Alert Source
 - Event type: `AUDIT_RETENTION_ERROR`
@@ -19,6 +20,28 @@ Related retention controls:
 - `AUDIT_RETENTION_OLDER_THAN_DAYS`
 - `AUDIT_RETENTION_DRY_RUN`
 - `AUDIT_RETENTION_ARCHIVE_DIR`
+
+Related branch-manager import control:
+- `BRANCH_MANAGER_IMPORT_DEFAULT_PASSWORD` (default password for newly created imported users; rotate after import)
+
+## Admin XLSX Import Operations
+Endpoint:
+- `POST /api/admin/users/import-branch-managers`
+- Auth: Admin only
+- Payload: multipart form-data with `file` (`.xlsx`)
+
+Column mapping:
+- `username/email = A + B + "@dbank.co.il"`
+- `fullName = C + D`
+- `branchCode = (I if present, else K) / 100`
+- `branchName = J if present, else L`
+
+Operational checks:
+1. Verify the file source is approved and current.
+2. Run import from Admin user-management screen.
+3. Confirm response summary (`totalRows`, `created`, `updated`) and audit entry `USER_BRANCH_MANAGER_IMPORT`.
+4. Validate a sample of imported users in `/api/admin/users` with `role=BRANCH_MANAGER`.
+5. Trigger password reset or force password change process for imported users per policy.
 
 ## Alerting Ownership Matrix
 1. Primary owner: Platform On-Call (`#platform-oncall` / Pager escalation policy `BT-CTS-PLATFORM-P1`).
