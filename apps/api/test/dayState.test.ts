@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DayState } from "@prisma/client";
+import { DayState } from "../src/prismaEnums";
 import { isValidDayTransition } from "../src/dayState";
 
 describe("day state transitions", () => {

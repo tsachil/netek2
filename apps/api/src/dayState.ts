@@ -1,6 +1,6 @@
-import { DayState } from "@prisma/client";
+import { DayState, type DayStateValue } from "./prismaEnums";
 
-export const allowedTransitions: Record<DayState, DayState[]> = {
+export const allowedTransitions: Record<DayStateValue, DayStateValue[]> = {
   CLOSED: [DayState.LOADING],
   LOADING: [DayState.OPEN, DayState.CLOSED],
   OPEN: [DayState.CLOSING],
@@ -8,7 +8,7 @@ export const allowedTransitions: Record<DayState, DayState[]> = {
   RECONCILING: [DayState.CLOSED]
 };
 
-export function isValidDayTransition(currentState: DayState, nextState: DayState) {
+export function isValidDayTransition(currentState: DayStateValue, nextState: DayStateValue) {
   if (currentState === nextState) {
     return true;
   }

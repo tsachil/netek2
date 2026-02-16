@@ -1,11 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
-import { UserRole, UserStatus } from "@prisma/client";
+import { UserRole, UserStatus, type UserRoleValue, type UserStatusValue } from "./prismaEnums";
 
 export type SessionUser = {
   id: string;
-  role: UserRole;
+  role: UserRoleValue;
   branchCode: string | null;
-  status: UserStatus;
+  status: UserStatusValue;
 };
 
 declare module "express-session" {
@@ -21,7 +21,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   return next();
 }
 
-export function requireRole(roles: UserRole[]) {
+export function requireRole(roles: UserRoleValue[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = req.session.user;
     if (!user) {

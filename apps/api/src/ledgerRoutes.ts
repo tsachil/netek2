@@ -3,8 +3,8 @@ import JSZip from "jszip";
 import { z } from "zod";
 import prisma from "./db";
 import { requireRole } from "./auth";
-import { UserRole } from "@prisma/client";
 import { formatBusinessDate, generateLedgerCsv } from "./ledgerCsv";
+import { UserRole } from "./prismaEnums";
 
 const router = Router();
 

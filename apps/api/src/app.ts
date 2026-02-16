@@ -11,8 +11,8 @@ import bcpRouter from "./bcp";
 import ledgerRouter from "./ledgerRoutes";
 import transactionsRouter from "./transactions";
 import { requireAuth, requireRole } from "./auth";
-import { UserRole, UserStatus, DayState, TransactionStatus, TransactionType } from "@prisma/client";
 import { allowedTransitions } from "./dayState";
+import { DayState, TransactionStatus, TransactionType, UserRole, UserStatus } from "./prismaEnums";
 
 dotenv.config();
 

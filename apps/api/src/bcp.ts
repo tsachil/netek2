@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { requireRole } from "./auth";
-import { DayState, Prisma, UserRole } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import multer from "multer";
 import { parseAndValidate, parseValidateAndExtract } from "./bcpValidator";
 import prisma from "./db";
+import { DayState, UserRole } from "./prismaEnums";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });

@@ -1,8 +1,8 @@
 import { Router } from "express";
 import prisma from "./db";
 import { requireRole } from "./auth";
-import { BranchStatus, UserRole } from "@prisma/client";
 import { z } from "zod";
+import { BranchStatus, UserRole, type BranchStatusValue } from "./prismaEnums";
 
 const router = Router();
 
@@ -25,7 +25,7 @@ const importSchema = z.object({
 type BranchRow = {
   branchCode: string;
   branchName: string;
-  status: BranchStatus;
+  status: BranchStatusValue;
 };
 
 function parseCsv(csv: string) {

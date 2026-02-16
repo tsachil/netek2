@@ -3,9 +3,9 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import prisma from "./db";
 import { requireRole } from "./auth";
-import { UserRole, UserStatus } from "@prisma/client";
 import { loadAuditRetentionPolicyFromEnv, runAuditRetention } from "./auditRetention";
 import { evaluateRecoverySlo } from "./recoverySlo";
+import { UserRole, UserStatus } from "./prismaEnums";
 
 const router = Router();
 

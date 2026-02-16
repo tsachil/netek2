@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import { DayState, TransactionStatus, TransactionType } from "@prisma/client";
+import {
+  DayState,
+  TransactionStatus,
+  TransactionType,
+  type DayStateValue,
+  type TransactionStatusValue,
+  type TransactionTypeValue
+} from "../src/prismaEnums";
 
 type MockAccount = {
   id: string;
@@ -20,11 +27,11 @@ type MockTransaction = {
   branchCode: string;
   accountId: string;
   accountKey: string;
-  type: TransactionType;
+  type: TransactionTypeValue;
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
-  status: TransactionStatus;
+  status: TransactionStatusValue;
   voidReference: string | null;
   tellerUserId: string;
   referenceNote: string | null;
@@ -42,7 +49,7 @@ const audits: Array<{
   metadata: Record<string, unknown> | null;
   createdAt: Date;
 }> = [];
-let dayState: DayState = DayState.OPEN;
+let dayState: DayStateValue = DayState.OPEN;
 const sessionUser = {
   id: "teller-1",
   role: "TELLER",

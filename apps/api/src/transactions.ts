@@ -1,8 +1,17 @@
 import { Router } from "express";
-import { Prisma, TransactionType, TransactionStatus, UserRole, DayState } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "./db";
 import { requireAuth, requireRole } from "./auth";
+import {
+  DayState,
+  TransactionStatus,
+  TransactionType,
+  UserRole,
+  type TransactionStatusValue,
+  type TransactionTypeValue,
+  type UserRoleValue
+} from "./prismaEnums";
 
 const router = Router();
 
@@ -25,7 +34,11 @@ async function nextTransactionId(branchCode: string, businessDate: Date, tx: Pri
   return `TXN-${branchCode}-${yyyymmdd}-${padded}`;
 }
 
-function resolveBranchCode(userRole: UserRole, sessionBranchCode: string | null, requestedBranchCode?: string) {
+function resolveBranchCode(
+  userRole: UserRoleValue,
+  sessionBranchCode: string | null,
+  requestedBranchCode?: string
+) {
   if (userRole === UserRole.ADMIN) {
     return requestedBranchCode ?? null;
   }
@@ -44,9 +57,9 @@ function auditContext(req: { ip?: string; sessionID?: string }) {
 
 function summarizeTransactions(
   txs: Array<{
-    type: TransactionType;
+    type: TransactionTypeValue;
     amount: Prisma.Decimal | number | string;
-    status: TransactionStatus;
+    status: TransactionStatusValue;
     tellerUserId?: string;
     createdAt?: Date;
   }>
